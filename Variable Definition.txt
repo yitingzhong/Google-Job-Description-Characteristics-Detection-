@@ -1,0 +1,24 @@
+Category_Group: Two-class variable: Techical fields and non-technical fields.
+Define non-technical fields which include the following job categories: 
+'Administrative','Business Strategy','Legal & Government Relations','Marketing & Communications','Partnerships',
+'People Operations','Real Estate & Workplace Services'. 
+
+Year_Requirement: Use preferred year requirement if it exists, otherwise use minimum year requirement.
+Degree_Requirement: Use preferred degree requirement if it exists, otherwise use minimum degree requirement.
+Title_Level: Three-class variable with values 1,2,3. 1 - Intern; 2 - entry level positions, including Analyst, consultant, 
+Senior, Specialist and Unknown; 3 - management level positions, including Director, Executive, Head, Lead, and Manager.
+
+Keywords Synonyms:
+analytical/analytics
+customer/customers
+communication/communicate
+management/manage/managing
+marketing/market
+partner/partners
+product/products
+project/projects
+strategy/strategies/strategic
+team/teams
+technology/technologies
+write/written
+

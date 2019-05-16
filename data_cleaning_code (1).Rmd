@@ -1,0 +1,176 @@
+---
+title: "4740 project - data cleaning"
+author: "Yiting Zhong"
+date: "November 19, 2018"
+output: html_document
+---
+
+First, read the data set and stop words list. 
+```{r}
+# read data file
+job_file = 'C:\\1 - Cornell Graduate Study\\MPS Program Related\\Courses\\STSCI 4740\\final project\\job_skill_short.csv'
+job = read.csv(job_file)
+
+# read stop words list 
+stop_word_file = 'C:\\1 - Cornell Graduate Study\\MPS Program Related\\Courses\\STSCI 4740\\final project\\stop_word_list.txt'
+stop_word = read.table(stop_word_file)
+colnames(stop_word) = 'Word'
+
+library(dplyr)
+library(stringr)
+```
+**PART I Extract frequent features from three columns**
+
+Next, get 100 top frequent keywords for 'minimum requirement'.
+```{r}
+min_qua = c('')
+for (i in 1:nrow(job)){
+  min_qua = paste(min_qua, job$Minimum.Qualifications[i], sep = '')
+}
+
+# seperate by blanks
+txtList = lapply(min_qua, strsplit," ")
+txtChar = unlist(txtList)
+
+# keep only letters and numerals
+txtChar = str_replace_all(txtChar, "[^[:alnum:]]", " ")
+# remove blanks
+txtChar = gsub(" ", "", txtChar, fixed = TRUE)
+# remove null value
+txtChar = txtChar[txtChar!=""]
+# transform to data frame
+data = as.data.frame(table(txtChar))
+colnames(data) = c("Word","freq")
+# get words and their frequency
+ordFreq = data[order(data$freq,decreasing=T),]
+# filter meaningless common words, such as 'a', 'the', 'in', etc, using the stop word list 
+antiWord = data.frame(stop_word, stringsAsFactors=F)
+# ordFreq - antiWord is what we want
+min_freq_count = anti_join(ordFreq,antiWord,by="Word") %>% arrange(desc(freq))  
+
+# see the top 100 frequents words
+min_freq_count = min_freq_count[1:100,]
+# print(min_freq_count)
+
+
+# write.csv(min_freq_count, 'C:\\1 - Cornell Graduate Study\\MPS Program Related\\Courses\\STSCI 4740\\final project\\data cleaning\\min_freq_count.csv')
+```
+
+Next, follow the same steps as the above and get 100 top frequent keywords for 'responsibilities'.
+```{r}
+respons = c('')
+for (i in 1:nrow(job)){
+  respons = paste(respons, job$Responsibilities[i], sep = '')
+}
+
+# seperate by blanks
+txtList = lapply(respons, strsplit," ")
+txtChar = unlist(txtList)
+
+# keep only letters and numerals
+txtChar = str_replace_all(txtChar, "[^[:alnum:]]", " ")
+# remove blanks
+txtChar = gsub(" ", "", txtChar, fixed = TRUE)
+# remove null value
+txtChar = txtChar[txtChar!=""]
+# transform to data frame
+data = as.data.frame(table(txtChar))
+colnames(data) = c("Word","freq")
+# get words and their frequency
+ordFreq = data[order(data$freq,decreasing=T),]
+# filter meaningless common words, such as 'a', 'the', 'in', etc, using the stop word list 
+antiWord = data.frame(stop_word, stringsAsFactors=F)
+# ordFreq - antiWord is what we want
+respons_count = anti_join(ordFreq,antiWord,by="Word") %>% arrange(desc(freq)) 
+
+# see the top 100 frequents words
+respons_count = respons_count[1:100,]
+# print(respons_count)
+
+# write.csv(respons_count, 'C:\\1 - Cornell Graduate Study\\MPS Program Related\\Courses\\STSCI 4740\\final project\\data cleaning\\respons_count.csv')
+```
+
+Also get 100 top frequent keywords for 'Preferred Qualifications'.
+```{r}
+prefer_qua = c('')
+for (i in 1:nrow(job)){
+  prefer_qua = paste(prefer_qua, job$Preferred.Qualifications[i], sep = '')
+}
+
+
+# seperate by blanks
+txtList = lapply(prefer_qua, strsplit," ")
+txtChar = unlist(txtList)
+
+# keep only letters and numerals
+txtChar = str_replace_all(txtChar, "[^[:alnum:]]", " ")
+# remove blanks
+txtChar = gsub(" ", "", txtChar, fixed = TRUE)
+# remove null value
+txtChar = txtChar[txtChar!=""]
+# transform to data frame
+data = as.data.frame(table(txtChar))
+colnames(data) = c("Word","freq")
+# get words and their frequency
+ordFreq = data[order(data$freq,decreasing=T),]
+# filter meaningless common words, such as 'a', 'the', 'in', etc, using the stop word list 
+antiWord = data.frame(stop_word, stringsAsFactors=F)
+# ordFreq - antiWord is what we want
+prefer_qua_count = anti_join(ordFreq,antiWord,by="Word") %>% arrange(desc(freq)) 
+prefer_qua_count = prefer_qua_count[1:100,]
+# print(prefer_qua_count)
+
+# write.csv(prefer_qua_count, 'C:\\1 - Cornell Graduate Study\\MPS Program Related\\Courses\\STSCI 4740\\final project\\data cleaning\\prefer_qua_count.csv')
+```
+
+
+draw word cloud graphs.
+```{r}
+# library(wordcloud2)
+# wordcloud2(prefer_qua_count, size = 2, minRotation = -pi/2, maxRotation = -pi/2)
+```
+
+**PART II Extract year and degree requirements**
+
+```{r}
+job_new = read.csv(job_file)
+# use regular expressions to make extraction
+for (i in 1:nrow(job_new)){
+  job_new$min.year.requirement[i] = str_extract(job_new$Minimum.Qualifications[i],'[0-9]* year(s)?')
+  
+  job_new$preferred.year.requirement[i] = str_extract(job_new$Preferred.Qualifications[i],'[0-9]* year(s)?')
+  
+  job_new$min.degree[i] = str_extract(job_new$Minimum.Qualifications[i],'(BA)|(BS)|(Bachelor)|(MA)|(MS)|(Master)|(PhD)|(Doctor)|(MBA)')
+  
+  job_new$preferred.degree[i] = str_extract(job_new$Preferred.Qualifications[i],'(BA)|(BS)|(Bachelor)|(MA)|(MS)|(Master)|(PhD)|(Doctor)')
+}
+
+job_new <- apply(job_new,2,as.character)
+
+
+# write.csv(job_new, 'C:\\1 - Cornell Graduate Study\\MPS Program Related\\Courses\\STSCI 4740\\final project\\data cleaning\\job_addyeardegree.csv')
+
+
+```
+
+**PART III Divide job categories and job titles**
+
+Divide job categories into two groups - technical fields and non-technical fields. Define non-technical fields for the following job categories: 'Administrative','Business Strategy','Legal & Government Relations','Marketing & Communications','Partnerships','People Operations','Real Estate & Workplace Services'. (This step done in Excel)
+
+
+Next, divide job titles into management level job positions and entry level positions and interns.
+```{r}
+job_new_file = 'C:\\1 - Cornell Graduate Study\\MPS Program Related\\Courses\\STSCI 4740\\final project\\data cleaning\\job_addyeardegree_final.csv'
+job_new = read.csv(job_new_file)
+
+# use regular expressions to make extraction
+for (i in 1:nrow(job_new)){
+  job_new$Title_Group[i] = str_extract(job_new$Title[i],'(?i)(Executive)|(Head)|(Manager)|(Lead)|(Director)|(Senior)|(Consultant)|(Specialist)|(Analyst)|(Intern)')
+  if(is.na(job_new$Title_Group[i])==T){
+    job_new$Title_Group[i] = 'Unknown'
+  }
+}
+
+# write.csv(job_new,'C:\\1 - Cornell Graduate Study\\MPS Program Related\\Courses\\STSCI 4740\\final project\\data cleaning\\job_title.csv')
+```
+

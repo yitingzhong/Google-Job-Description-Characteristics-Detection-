@@ -1,0 +1,164 @@
+---
+title: "Classification Models"
+author: "Yiting Zhong"
+date: "November 22, 2018"
+output: html_document
+---
+
+```{r}
+job = read.csv('C:\\1 - Cornell Graduate Study\\MPS Program Related\\Courses\\STSCI 4740\\final project\\job_v4.0.csv')
+colnames(job)[1] = 'cat_group'
+
+# treat all variables except year_requirement as factors
+for (i in 1:ncol(job)){
+  if (colnames(job)[i] == 'Year_Requirement'){
+    next
+  }else{
+    job[,i] = as.factor(job[,i])
+  }
+}
+
+set.seed(1)
+# divide data
+train = sample(nrow(job),0.7*nrow(job),replace = F)
+training = job[train,]
+test = job[-train,]
+
+library(caret) # Confusion Matrix
+```
+
+
+
+**PART I Decision Tree Model**
+```{r}
+library(rpart) # Decision Tree
+ct <- rpart.control(xval=10, minsplit=20)
+tree_model = rpart(cat_group ~., data=training[,-2], control=ct)
+
+testPred <- predict(tree_model, newdata = test[,c(-1,-2)])
+
+test_predict_cat_group = ifelse(testPred[,2] >0.5,1,0)
+test_predict_cat_group = as.vector(test_predict_cat_group)
+
+confusionMatrix(table(test_predict_cat_group, test$cat_group))
+```
+
+```{r}
+plot(tree_model)
+text(tree_model, pretty = 0, cex=0.8)
+```
+
+
+
+```{r}
+library(rpart) # Decision Tree
+ct <- rpart.control(xval=10, minsplit=20)
+
+
+training = na.omit(training)
+test = na.omit(test)
+
+tree_model = rpart(cat_group ~., data=training, control=ct)
+
+testPred <- predict(tree_model, newdata = test[,-1])
+
+test_predict_cat_group = ifelse(testPred[,2]>0.5,1,0)
+test_predict_cat_group = as.vector(test_predict_cat_group)
+
+confusionMatrix(table(test_predict_cat_group, test$cat_group))
+```
+
+
+
+
+
+
+```{r}
+# prune tree
+tree_model2 <- prune(tree_model, cp=0.02)
+plot(tree_model2)
+text(tree_model2, pretty = 0, cex=0.8)
+```
+
+Random Forest
+```{r}
+library(randomForest)
+
+forest_model = randomForest(cat_group ~., data=training[,-2], importance=T)
+forest.prediction = predict(forest_model,test)
+forest.table = table(forest.prediction,test$cat_group)
+confusionMatrix(forest.table)
+```
+
+naive bayes
+```{r}
+library(e1071)
+bayes_model <- naiveBayes(cat_group ~., data=training[,-2])  
+bayes.prediction <- predict(bayes_model,test[-2]) 
+bayes.table = table(bayes.prediction,test$cat_group)
+confusionMatrix(bayes.table)
+```
+
+logistic regression
+```{r}
+logistic_model = glm(cat_group ~.,family=binomial(link='logit'),data=training[,-2])
+summary(logistic_model)
+
+
+testPred <- predict(logistic_model, newdata = test[,-2],type='response')
+
+test_predict_cat_group = ifelse(testPred >0.5,1,0)
+test_predict_cat_group = as.vector(test_predict_cat_group)
+
+confusionMatrix(table(test_predict_cat_group, test$cat_group))
+
+
+```
+
+Feature Selection
+```{r}
+logistic_model_step = step(logistic_model, direction = 'backward')
+```
+
+```{r}
+testPred <- predict(logistic_model_step, newdata = test[,-2],type='response')
+
+test_predict_cat_group = ifelse(testPred >0.5,1,0)
+test_predict_cat_group = as.vector(test_predict_cat_group)
+
+confusionMatrix(table(test_predict_cat_group, test$cat_group))
+```
+
+```{r}
+library(arules)
+lhs = c("Management=1","business=1","technical=1","product=1", "strategy=1","team=1","customer=1","sales=1","cloud=1","marketing=1","data=1","engineering=1","design=1","communication=1","partner=1","solutions=1","project=1","crossfunctional=1","analytical=1","research=1","english=1","write=1","science=1","interpersonal=1","organizational=1","platform=1","consulting=1","mobile=1","fastpaced=1","web=1")	
+
+rules1 <- apriori(job[,-2],
+                 
+                 control = list(verbose=F),
+                 
+                 parameter = list(minlen=2, supp=0.005, conf=0.8),
+                 
+                 appearance = list(lhs=lhs,rhs=c("cat_group=1")))
+
+inspect(sort(rules1,by="support")[1:10])
+
+```
+
+```{r}
+rules2 <- apriori(job[,-2],
+                 
+                 control = list(verbose=F),
+                 
+                 parameter = list(minlen=2, supp=0.005, conf=0.8),
+                 
+                 appearance = list(rhs=c("cat_group=0"),
+                                   
+                                   default="lhs"))
+
+rules2_subset1 = subset(rules2,subset=size(rules2)==2)
+rules2_subset2 = subset(rules2,subset=size(rules2)==3)
+
+inspect(sort(rules2_subset1,by="support"))
+inspect(sort(rules2_subset2,by="support")[1:10])
+```
